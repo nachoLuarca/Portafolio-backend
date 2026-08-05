@@ -10,4 +10,14 @@ const me = asyncHandler(async (req, res) => {
   res.json({ user: req.user });
 });
 
-module.exports = { login, me };
+const refresh = asyncHandler(async (req, res) => {
+  const result = await authService.refresh(req.body.refreshToken);
+  res.json(result);
+});
+
+const logout = asyncHandler(async (req, res) => {
+  await authService.logout(req.user.jti, req.user.exp, req.body.refreshToken);
+  res.json({ success: true });
+});
+
+module.exports = { login, me, refresh, logout };

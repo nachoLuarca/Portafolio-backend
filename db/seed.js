@@ -20,7 +20,7 @@ async function seed() {
       return;
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 12);
     await usersRepo.create({ name, email, passwordHash });
 
     console.log(`✅ Usuario admin creado: ${email}`);

@@ -6,11 +6,15 @@ const { validate } = require("../middleware/validate");
 
 const router = express.Router();
 
+// Solo http/https: evita esquemas peligrosos (javascript:, data:, etc.) en
+// campos que el frontend renderiza como enlace (href).
+const urlOptions = { protocols: ["http", "https"], require_protocol: true };
+
 const rules = [
   body("name").trim().notEmpty().withMessage("El nombre es requerido.").isLength({ max: 180 }),
   body("issuer").trim().notEmpty().withMessage("El emisor es requerido.").isLength({ max: 160 }),
   body("issue_date").optional({ nullable: true }).isISO8601().withMessage("Fecha inválida."),
-  body("credential_url").optional({ checkFalsy: true }).isURL().withMessage("URL inválida."),
+  body("credential_url").optional({ checkFalsy: true }).isURL(urlOptions).withMessage("URL inválida."),
   body("display_order").optional().isInt().withMessage("El orden debe ser un número entero.").toInt(),
 ];
 

@@ -15,6 +15,23 @@ const messagesRoutes = require("./routes/messages.routes");
 
 const app = express();
 
+// Solo confiar en cabeceras X-Forwarded-For (usadas por rateLimiter para
+// identificar la IP real del cliente) si TRUST_PROXY está definida
+// explícitamente, es decir, si hay un reverse proxy real delante del backend.
+// Por defecto (sin proxy, como en el docker-compose actual que expone el
+// backend directamente) NO se confía en esa cabecera, para que nadie pueda
+// evadir el rate limiter enviándola falsificada directamente a la API.
+if (process.env.TRUST_PROXY) {
+  // Las variables de entorno siempre son strings: si TRUST_PROXY es un
+  // entero (ej. "1" = un solo proxy delante), hay que pasarlo a Express
+  // como number — como string sería interpretado como una dirección/rango
+  // de IP literal (ej. "loopback", "10.0.0.0/8") y no como conteo de saltos.
+  const trustProxyValue = /^\d+$/.test(process.env.TRUST_PROXY)
+    ? Number(process.env.TRUST_PROXY)
+    : process.env.TRUST_PROXY;
+  app.set("trust proxy", trustProxyValue);
+}
+
 // Cabeceras de seguridad HTTP (protege contra clickjacking, sniffing de MIME, etc.)
 app.use(helmet());
 

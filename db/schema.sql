@@ -92,12 +92,40 @@ CREATE TABLE IF NOT EXISTS messages (
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- Tokens JWT revocados antes de su expiración natural (logout). Cada token
+-- firmado lleva un "jti" único; al hacer logout se guarda aquí hasta su
+-- expiración original, y requireAuth rechaza cualquier token cuyo jti esté
+-- en esta tabla aunque la firma y el "exp" todavía sean válidos.
+-- TIMESTAMPTZ (no TIMESTAMP): con TIMESTAMP "sin zona", el driver de pg
+-- serializa el Date de JS usando la hora LOCAL de la máquina, no UTC — si el
+-- proceso Node corre en una zona horaria distinta a la del servidor Postgres,
+-- expires_at queda desfasado y la comparación "expires_at > NOW()" da
+-- resultados incorrectos (un token revocado puede parecer ya expirado y
+-- dejar de bloquearse). TIMESTAMPTZ guarda el instante absoluto y evita eso.
+CREATE TABLE IF NOT EXISTS revoked_tokens (
+  jti VARCHAR(64) PRIMARY KEY,
+  expires_at TIMESTAMPTZ NOT NULL
+);
+
+-- Refresh tokens vigentes. Cada login crea una fila; el jti viaja dentro del
+-- refresh token JWT (firmado con JWT_REFRESH_SECRET, distinto del de acceso).
+-- /auth/refresh exige que el jti exista aquí y no esté revocado ni vencido;
+-- logout marca revoked_at para invalidarlo antes de su expiración natural.
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+  jti VARCHAR(64) PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ
+);
+
 -- Índices para las consultas más frecuentes (ordenar listados, filtrar no leídos)
 CREATE INDEX IF NOT EXISTS idx_work_experience_order ON work_experience (display_order, start_date DESC);
 CREATE INDEX IF NOT EXISTS idx_education_order ON education (display_order, start_date DESC);
 CREATE INDEX IF NOT EXISTS idx_certifications_order ON certifications (display_order, issue_date DESC);
 CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages (is_read, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_projects_status_order ON projects (status, display_order, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_revoked_tokens_expires ON revoked_tokens (expires_at);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens (user_id);
 
 -- Fila inicial de perfil vacía para que siempre exista
 INSERT INTO profile (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
