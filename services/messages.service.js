@@ -1,9 +1,11 @@
 const messagesRepo = require("../repositories/messages.repository");
 const Message = require("../models/Message");
 const ApiError = require("../utils/ApiError");
+const { sendContactNotification } = require("../utils/mailer");
 
 async function submit(data) {
   const { id } = await messagesRepo.create(data);
+  await sendContactNotification(data);
   return { success: true, id };
 }
 
