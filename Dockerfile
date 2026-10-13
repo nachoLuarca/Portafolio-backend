@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN npm install --omit=dev
 # Copiar el resto del código
 COPY . .
 
-# La imagen base node:20-alpine ya trae un usuario "node" (uid 1000) sin
+# La imagen base node:24-alpine ya trae un usuario "node" (uid 1000) sin
 # privilegios. Le damos dueño de /app (npm install corrió como root) y
 # corremos el proceso con él, para no ejecutar como root dentro del
 # contenedor.
