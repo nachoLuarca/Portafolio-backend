@@ -31,7 +31,17 @@ npm run dev     # servidor con recarga automática (nodemon), puerto 4000
 npm start       # modo producción
 ```
 
-También se puede levantar con Docker desde la raíz del proyecto: `docker compose up -d db backend`.
+### Con Docker
+
+`docker-compose.yml` levanta el backend y un Postgres 16 (servicio `db`, datos en el volumen `portfolio_pgdata`). Dentro de la red de compose el backend se conecta a la base por el nombre del servicio (`db`), así que no hace falta cambiar el `DATABASE_URL` del `.env`: compose lo reemplaza. Define además `POSTGRES_PASSWORD` en el `.env`.
+
+```bash
+cp .env.example .env                           # completar POSTGRES_PASSWORD, JWT_*, ADMIN_*
+docker compose up -d --build                   # levanta db y backend
+docker compose exec backend npm run db:init    # primera vez: crea las tablas
+docker compose exec backend npm run db:seed    # primera vez: crea el usuario admin
+docker compose down                            # detiene todo (los datos se conservan en el volumen)
+```
 
 ## Endpoints
 
@@ -43,7 +53,8 @@ También se puede levantar con Docker desde la raíz del proyecto: `docker compo
 | Experiencia | `/api/experience` |
 | Educación | `/api/education` |
 | Certificaciones | `/api/certifications` |
-| Mensajes de contacto | `/api/messages` |
+| Mensajes de contacto (formulario público) | `POST /api/contact` |
+| Mensajes de contacto (administración) | `/api/admin/messages` |
 
 Las rutas bajo `/api/admin/*` requieren autenticación (`requireAuth`).
 
